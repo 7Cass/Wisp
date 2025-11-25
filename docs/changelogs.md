@@ -2,6 +2,12 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Unreleased]
+
+### Docs
+- README atualizado com descrição expandida (ECS+eventos, chunks/viewport, storytelling via log e roadmap/Visão de Produto).
+- package.json com `description` descritiva do projeto/engine.
+
 ## [1.0.0] - 2025-11-25
 
 ### Added
@@ -36,4 +42,3 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 - `docs/brainstorming/occupancy-and-collision.md` propondo API de ocupação/camada e evolução com `SpatialIndex` e `Collider`.
 
 [1.0.0]: #
-

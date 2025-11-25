@@ -1,12 +1,12 @@
 # simulation_v2
 
-Simulação por turnos em terminal, escrita em TypeScript, com uma mini engine baseada em ECS (Entity–Component–System), um barramento de eventos, IA simples (percepção/decisão), movimento, combate e um sistema de log. O objetivo é ser um playground didático e extensível para explorar arquiteturas de simulação e roguelike.
+Mini‑engine de simulação por turnos em TypeScript, baseada em ECS e eventos, com mundo procedural chunkado, IA reativa e storytelling orientado a eventos. Renderizada em ASCII (terminal) e desenhada para extensibilidade: scheduler por turnos, pathfinding/FoV, sistema de ocupação/camadas, StorySystem, triggers/efeitos, seeds determinísticos e serialização para replays.
 
 - Renderização em terminal (ASCII), sem bibliotecas de game.
-- Mundo procedural (salas retangulares e corredores em L).
+- Mundo procedural (salas retangulares e corredores em L) e base para chunking/viewport.
 - Entidades com componentes (posição, visão, vida, ataque, aparência, raça, tipo, IA, comportamento).
 - Sistemas determinísticos por domínio: percepção, decisão de IA, combate, movimento, morte e logging.
-- Logs de alto nível para facilitar depuração e entendimento do que acontece a cada tick.
+- Storytelling básico via log orientado a eventos (base para StorySystem).
 
 
 ## Sumário
@@ -32,10 +32,20 @@ A engine segue o padrão ECS:
 
 Além do ECS, a engine tem:
 - Mundo em grade (`WorldGrid`) com `tiles` e `tick` (contador lógico de tempo de simulação).
-- Barramento de eventos (`EventBus`) por tick para desacoplar sistemas (percepção, IA, movimento, combate, log, morte).
+- Barramento de eventos (`EventBus`) por tick para desacoplar sistemas (percepção, IA, movimento, combate, log, morte) e servir de base para StorySystem.
 - Sistema de log com handlers por tipo de evento para mensagens legíveis.
 
 O loop atual é baseado em um relógio real (`setInterval`), mas a engine foi organizada para facilitar a migração para um scheduler por turnos (ver seção “Ideias e Próximos Passos”).
+
+
+## Visão de Produto (Roadmap Resumido)
+- Scheduler por turnos: velocidades/cooldowns, determinismo e desacoplamento do render.
+- Ocupação/Colisão centralizada: camadas e sobreposição controlada (corpse/effect/trap), pronto para `SpatialIndex`.
+- Pathfinding (BFS/A*) e FoV (shadow‑casting) com suporte a `blocksVision`.
+- StorySystem: narrativa reativa a eventos (rumores, objetivos, consequências).
+- Triggers/Effects/Traps: reações a `move`/`enter tile` e efeitos temporais.
+- Data‑driven: stats/config por JSON; facções e relações expansíveis.
+- RNG determinístico (seeds), save/load e replays.
 
 
 ## Como Rodar
@@ -155,4 +165,3 @@ Tipos de eventos (em `events.ts`):
 
 ## Licença
 - Conforme `package.json`, licença ISC.
-
