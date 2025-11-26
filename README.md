@@ -17,6 +17,7 @@ Mini‑engine de simulação por turnos em TypeScript, baseada em ECS e eventos,
 - Componentes e Entidades (ECS)
 - IA e Relações entre Raças
 - Mundo e Tiles
+ - World Generation
 - Eventos e Logging
 - Adaptador de Terminal (View/Renderer)
 - Foco de Entidade (UI)
@@ -124,6 +125,12 @@ Spawns (em `simulation.ts`):
 - `createWorld(width, height)`: inicializa grade com paredes e carva salas retangulares + corredores em L, com largura de 1–2.
 - Tiles: `Empty` e `Wall`; `isWalkable` define passabilidade.
 - Coordenadas e limites: `inBounds` (helpers em `math.ts`).
+
+
+## World Generation
+- Visão geral da pipeline, biomas, painters e chunking: `docs/world-generation/README.md`
+- Diagramas ASCII e exemplos visuais por bioma: `docs/world-generation/diagrams-and-examples.md`
+- Tuning Guide com presets (altura, umidade, temperatura, vegetação, mar): `docs/world-generation/tuning-guide.md`
 
 
 ## Eventos e Logging
