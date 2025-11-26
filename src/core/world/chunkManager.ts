@@ -1,11 +1,11 @@
 import {Chunk, CHUNK_SIZE, ChunkCoords, chunkId} from './chunk';
 import {WorldGrid} from './world';
 import {Viewport} from './viewport';
-import {TerrainTile, TerrainType} from '../tile';
-import {VegetationTile} from '../layers/vegetation';
+import {TerrainTile} from '../tile';
 import {Entity} from '../ecs/entities';
 import {ECSState} from '../ecs/state';
-import {WorldGenerator} from './worldGenerator';
+import {WorldGenerator} from './generators/worldGenerator';
+import {VegetationTile} from './layers/vegetation';
 
 export class ChunkManager {
   private chunks: Map<string, Chunk> = new Map();

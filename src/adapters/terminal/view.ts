@@ -3,7 +3,7 @@ import {inBounds} from '../../core/math';
 import {Race} from '../../core/ecs/components';
 import {terrainToChar} from '../../core/tile';
 import {Entity} from '../../core/ecs/entities';
-import {vegetationToChar} from '../../core/layers/vegetation';
+import {vegetationToChar} from '../../core/world/layers/vegetation';
 
 export interface WorldView {
   grid: string[][];

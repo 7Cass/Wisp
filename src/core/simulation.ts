@@ -9,8 +9,14 @@ import {isWalkableTerrain} from './tile';
 import {createViewport, Viewport} from './world/viewport';
 import {ChunkManager} from './world/chunkManager';
 import {createWorld, WorldGrid} from './world/world';
-import {generateWorldLayout} from './world/worldGenerator';
 import {DEFAULT_WORLD_CONFIG} from './world/config';
+import {ProceduralWorldGenerator, WorldGeneratorConfig} from './world/generators/worldGenerator';
+import {ValueNoiseHeightMap} from './world/generators/heightMap';
+import {ValueNoiseMoistureMap} from './world/generators/moistureMap';
+import {ValueNoiseTemperatureMap} from './world/generators/temperatureMap';
+import {DefaultTerrainPainter} from './world/generators/terrainPainter';
+import {DefaultVegetationPainter} from './world/generators/vegetationPainter';
+import {RangeBasedBiomeMap} from './world/biome/biomeMap';
 
 export interface Simulation {
   world: WorldGrid,
@@ -29,10 +35,72 @@ export function createSimulation(): Simulation {
     DEFAULT_WORLD_CONFIG.worldWidth,
     DEFAULT_WORLD_CONFIG.worldHeight
   );
-  const chunkManager = new ChunkManager(world);
 
-  generateWorldLayout(world, chunkManager);
+  const seed = 'default';
 
+  const generatorConfig: WorldGeneratorConfig = {
+    seed,
+    worldWidth: world.width,
+    worldHeight: world.height,
+  };
+
+  // HeightMap
+  const heightmap = new ValueNoiseHeightMap({
+    seed,
+    scale: 400,
+    octaves: 4,
+    persistence: 0.55,
+    lacunarity: 2.1,
+  });
+
+  // MoistureMap
+  const moistureMap = new ValueNoiseMoistureMap({
+    seed,
+    scale: 450,
+    octaves: 3,
+    persistence: 0.5,
+    lacunarity: 2.0,
+  });
+
+  // TemperatureMap
+  const temperatureMap = new ValueNoiseTemperatureMap({
+    seed,
+    worldHeight: world.height,
+    scale: 500,
+    octaves: 4,
+    persistence: 0.55,
+    lacunarity: 2.2,
+    latitudeWeight: 0.7,
+    altitudeWeight: 0.3,
+    noiseStrength: 0.25,
+  });
+
+  // Biome Map
+  const biomeMap = new RangeBasedBiomeMap();
+
+  // Painters
+  const terrainPainter = new DefaultTerrainPainter();
+  const vegetationPainter = new DefaultVegetationPainter({
+    seed,
+    noiseScale: 0.3,
+    densityThreshold: 0.23
+  });
+
+  // Final Generator
+  const generator = new ProceduralWorldGenerator(
+    generatorConfig,
+    heightmap,
+    moistureMap,
+    temperatureMap,
+    biomeMap,
+    terrainPainter,
+    vegetationPainter
+  );
+
+  // Chunk Manager
+  const chunkManager = new ChunkManager(world, generator);
+
+  // Viewport
   const viewport = createViewport(world.width, world.height);
 
   return {

@@ -1,7 +1,7 @@
 import {TerrainTile} from '../tile';
-import {VegetationTile} from '../layers/vegetation';
 import {Entity} from '../ecs/entities';
 import {DEFAULT_WORLD_CONFIG} from './config';
+import {VegetationTile} from './layers/vegetation';
 
 export const CHUNK_SIZE = DEFAULT_WORLD_CONFIG.chunkSize;
 

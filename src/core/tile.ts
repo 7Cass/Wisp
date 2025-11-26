@@ -4,13 +4,25 @@
  * (walls, empty spaces, etc.).
  */
 export enum TerrainType {
-  Empty,
-  Wall,
+  // Legacy (remove after)
+  Empty = 'empty',
+  Wall = 'wall',
+
+  // Natural terrains
+  Grass = 'grass',
+  Dirt = 'dirt',
+  Sand = 'sand',
+
+  Water = 'water',
+  ShallowWater = 'shallow_water',
+  Swamp = 'swamp',
+
+  Rock = 'rock',
+  Snow = 'snow'
 }
 
 /**
  * A terrain tile in world
- * Other layers (vegetation, structures, effects, etc.) will come in other modules.
  */
 export interface TerrainTile {
   type: TerrainType;
@@ -18,24 +30,65 @@ export interface TerrainTile {
 
 /**
  * Define if a creature can walk on a given tile (terrain).
- * In the future, if we have terrains like "hard" or "dangerous",
- * the logic can grow up here (water, lava, etc.).
+ * Here we take an initial decision:
+ *  - Water/Swamp/Rock ARE NOT walkable.
+ *  - Grass/Dirt/Sand/Snow ARE walkable.
+ *  - Empty behave like walkable (legacy)
  * @param tile A single cell in the world grid containing a terrain
  */
-export function isWalkableTerrain(tile: TerrainTile): boolean {
-  return tile.type !== TerrainType.Wall;
+export function isWalkableTerrain(tile: TerrainTile | null | undefined): boolean {
+  if (!tile) return false;
+
+  switch (tile.type) {
+    case TerrainType.Water:
+    case TerrainType.ShallowWater:
+    case TerrainType.Swamp:
+    case TerrainType.Wall:
+    case TerrainType.Rock:
+      return false;
+
+    case TerrainType.Grass:
+    case TerrainType.Dirt:
+    case TerrainType.Sand:
+    case TerrainType.Snow:
+    case TerrainType.Empty:
+      return true;
+
+    default:
+      return false;
+  }
 }
 
 /**
- * Convert a given terrain tile in a character for terminal rendering.
+ * Map terrain to char for terminal adapter. (probably should not be here but whatever)
+ * Purely visual; Can enhance later.
  * @param tile A single cell in the world grid containing a terrain
  */
-export function terrainToChar(tile: TerrainTile): string {
-  switch (tile?.type) {
+export function terrainToChar(tile: TerrainTile | null | undefined): string {
+  if (!tile) return ' ';
+
+  switch (tile.type) {
     case TerrainType.Empty:
       return ' ';
     case TerrainType.Wall:
       return '#';
+    case TerrainType.Grass:
+      return ',';
+    case TerrainType.Dirt:
+      return '.';
+    case TerrainType.Sand:
+      return ':'
+    case TerrainType.Water:
+      return '~'
+    case TerrainType.ShallowWater:
+      return '≈'
+    case TerrainType.Swamp:
+      return '%';
+    case TerrainType.Rock:
+      return '^';
+    case TerrainType.Snow:
+      return '*';
+
     default:
       return '?';
   }

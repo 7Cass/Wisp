@@ -1,5 +1,5 @@
 import {TerrainType} from '../../tile';
-import { VegetationType } from '../vegetation';
+import { VegetationType } from '../layers/vegetation';
 
 /**
  * Biome identifier on map.
@@ -205,11 +205,3 @@ export const BIOMES: BiomeDefinition[] = [
     }
   }
 ];
-
-/**
- * Get Biome definition of a given BiomeId
- * @param id
- */
-export function getBiomeDefinition(id: BiomeId): BiomeDefinition | undefined {
-  return BIOMES.find(b => b.id === id);
-}

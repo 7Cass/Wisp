@@ -131,7 +131,7 @@ export function vegetationToChar(veg: VegetationTile | null | undefined): string
     case 'bush':
       return '&';
     case 'berry_bush':
-      return '%';
+      return '$';
 
     case 'tree':
       return '♣';

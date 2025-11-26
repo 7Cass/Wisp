@@ -1,8 +1,12 @@
-import {TerrainTile, TerrainType} from '../tile';
-import {VegetationTile} from '../layers/vegetation';
-import {CHUNK_SIZE} from './chunk';
-import {mulberry32} from '../random/prng';
-import {makeChunkSeed} from '../random/hashing';
+import {TerrainTile, TerrainType} from '../../tile';
+import {createVegetationTile, VegetationTile} from '../layers/vegetation';
+import {CHUNK_SIZE} from '../chunk';
+import {TerrainPainter} from './terrainPainter';
+import {VegetationPainter} from './vegetationPainter';
+import {BiomeMap} from '../biome/biomeMap';
+import {ValueNoiseHeightMap} from './heightMap';
+import {ValueNoiseMoistureMap} from './moistureMap';
+import {ValueNoiseTemperatureMap} from './temperatureMap';
 
 export interface WorldGeneratorConfig {
   seed: string;
@@ -20,65 +24,93 @@ export interface WorldGenerator {
 }
 
 /**
- * Generator V1:
- *  - fill the chunk with Wall
- *  - with some chance, carve ONE empty rectangular room
- *  - place some random bushes over walkable terrains
+ * New procedural world generator:
+ *  - uses scalar fields (height/moisture/temp)
+ *  - a biome resolver
+ *  - a terrain painter
+ *  - a vegetation painter
  *
- *  All deterministic by (seed, cx, cy)
+ * It is fully deterministic as long as those components are deterministic
+ * for the same (seed, worldX, worldY).
  */
-export class DungeonWorldGenerator implements WorldGenerator {
-  constructor(private readonly config: WorldGeneratorConfig) {}
+export class ProceduralWorldGenerator implements WorldGenerator {
+  constructor(
+    private readonly config: WorldGeneratorConfig,
+    private readonly heightMap: ValueNoiseHeightMap,
+    private readonly moistureMap: ValueNoiseMoistureMap,
+    private readonly temperatureMap: ValueNoiseTemperatureMap,
+    private readonly biomeMap: BiomeMap,
+    private readonly terrainPainter: TerrainPainter,
+    private readonly vegetationPainter: VegetationPainter
+  ) {}
 
   generateChunk(cx: number, cy: number): GeneratedChunkData {
     const terrain: TerrainTile[][] = [];
     const vegetation: VegetationTile[][] = [];
 
-    const seed = makeChunkSeed(this.config.seed, cx, cy);
-    const rng = mulberry32(seed);
+    const worldOriginX = cx * CHUNK_SIZE;
+    const worldOriginY = cy * CHUNK_SIZE;
 
-    // Start with Wall / vegetation None
-    for (let y = 0; y < CHUNK_SIZE; y++) {
-      terrain[y] = [];
-      vegetation[y] = [];
-      for (let x = 0; x < CHUNK_SIZE; x++) {
-        terrain[y][x] = { type: TerrainType.Wall };
-        vegetation[y][x] = { type: 'none' };
-      }
-    }
+    for (let localY = 0; localY < CHUNK_SIZE; localY++) {
+      terrain[localY] = [];
+      vegetation[localY] = [];
 
-    // Decide if this chunk will have a carved "room"
-    const hasRoom = rng() < 0.7;
+      const worldY = worldOriginY + localY;
 
-    if (hasRoom) {
-      const roomWidth = 4 + Math.floor(rng() * (CHUNK_SIZE - 6));
-      const roomHeight = 4 + Math.floor(rng() * (CHUNK_SIZE - 6));
+      for (let localX = 0; localX < CHUNK_SIZE; localX++) {
+        const worldX = worldOriginX + localX;
 
-      const maxX = CHUNK_SIZE - roomWidth - 1;
-      const maxY = CHUNK_SIZE - roomHeight - 1;
-
-      const roomX = 1 + Math.floor(rng() * Math.max(1, maxX));
-      const roomY = 1 + Math.floor(rng() * Math.max(1, maxY));
-
-      for (let y = roomY; y < roomY + roomHeight; y++) {
-        for (let x = roomX; x < roomX + roomWidth; x++) {
-          terrain[y][x] = {type: TerrainType.Empty};
+        // Out of "real" world bound -> fill with default
+        if (
+          worldX < 0 ||
+          worldX >= this.config.worldWidth ||
+          worldY < 0 ||
+          worldY >= this.config.worldHeight
+        ) {
+          terrain[localY][localX] = { type: TerrainType.Wall };
+          vegetation[localY][localX] = createVegetationTile('none');
+          continue;
         }
-      }
-    }
 
-    // Simple vegetation: random bushes in some EMPTY tiles
-    for (let y = 0; y < CHUNK_SIZE; y++) {
-      for (let x = 0; x < CHUNK_SIZE; x++) {
-        if (terrain[y][x].type === TerrainType.Empty && rng() < 0.05) {
-          vegetation[y][x] = { type: 'bush' };
-        }
+        // Scalar fields
+        const altitude = this.heightMap.get(worldX, worldY);
+        const moisture = this.moistureMap.get(worldX, worldY);
+        const temperature = this.temperatureMap.get(worldX, worldY, altitude);
+
+        // Biome
+        const biome = this.biomeMap.pickBiome(
+          altitude,
+          moisture,
+          temperature
+        );
+
+        // Terrain
+        const terrainTile = this.terrainPainter.paint({
+          altitude,
+          moisture,
+          temperature,
+          biome,
+        });
+
+        // Vegetation
+        const vegetationTile = this.vegetationPainter.paint({
+          worldX,
+          worldY,
+          altitude,
+          moisture,
+          temperature,
+          biome,
+          terrain: terrainTile,
+        });
+
+        terrain[localY][localX] = terrainTile;
+        vegetation[localY][localX] = vegetationTile;
       }
     }
 
     return {
       terrain,
-      vegetation
+      vegetation,
     };
   }
 }

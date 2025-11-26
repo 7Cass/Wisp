@@ -17,6 +17,6 @@ export interface WorldConfig {
  */
 export const DEFAULT_WORLD_CONFIG: WorldConfig = {
   chunkSize: 64,
-  worldWidth: 384,
-  worldHeight: 384,
+  worldWidth: 1024,
+  worldHeight: 1024,
 };
