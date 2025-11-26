@@ -36,3 +36,25 @@ Este documento descreve os blocos principais da engine e como eles se conectam e
 
 Princípios: determinismo por seed, simplicidade/clareza de sistemas, custo controlado fora do `full`, e logs orientados a eventos para storytelling e depuração.
 
+### Diagrama (ASCII)
+```
+┌──────────────────┐      ┌──────────────────────────┐
+│   Tick Start     │      │      EventBus (per tick) │
+│ events.clear()   │◀─────┤  collect events emitted  │
+└───────┬──────────┘      └─────────────┬────────────┘
+        │                                ▲
+        v                                │ emit()
+┌──────────────────┐   ┌─────────────────┴─────────────────┐
+│ advanceTick()    │→→│ updateSimulationLevels(viewport)   │
+└──────────────────┘   └───────────────────────────────────┘
+        │
+        v
+┌──────────────────┐→┌──────────────────┐→┌─────────────────┐→┌──────────────────┐
+│ perceptionSystem │ │ aiDecisionSystem │ │  combatSystem   │ │ movementSystem   │
+└──────────────────┘ └──────────────────┘ └─────────────────┘ └──────────────────┘
+        │                                (emit move/blocked/engage/damage/die)
+        v
+┌──────────────────┐→┌──────────────────┐→┌──────────────────────┐→┌────────────────┐
+│   deathSystem    │ │    logSystem     │ │ ensureFocusedEntity  │ │   render()     │
+└──────────────────┘ └──────────────────┘ └──────────────────────┘ └────────────────┘
+```
