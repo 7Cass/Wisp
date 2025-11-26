@@ -5,13 +5,16 @@ import {TerrainTile, TerrainType} from '../tile';
 import {VegetationTile} from '../layers/vegetation';
 import {Entity} from '../ecs/entities';
 import {ECSState} from '../ecs/state';
+import {WorldGenerator} from './worldGenerator';
 
 export class ChunkManager {
   private chunks: Map<string, Chunk> = new Map();
-
   private entityToChunk: Map<Entity, string> = new Map();
 
-  constructor(private world: WorldGrid) {}
+  constructor(
+    private world: WorldGrid,
+    private generator: WorldGenerator,
+  ) {}
 
   /**
    * Convert world coordinates to chunk coordinates
@@ -48,27 +51,18 @@ export class ChunkManager {
   }
 
   /**
-   * Create an empty chunk with summary level simulation at given chunk coordinates
+   * Create a chunk using the WorldGenerator (seed + cx/cy).
    * @param cx Chunk X Coordinate
    * @param cy Chunk Y Coordinate
    * @private
    */
-  private createEmptyChunk(cx: number, cy: number): Chunk {
+  private createEmptyChunkFromGenerator(cx: number, cy: number): Chunk {
     const originX = cx * CHUNK_SIZE;
     const originY = cy * CHUNK_SIZE;
 
-    const terrain: TerrainTile[][] = [];
-    const vegetation: VegetationTile[][] = [];
-
-    for (let y = 0; y < CHUNK_SIZE; y++) {
-      terrain[y] = [];
-      vegetation[y] = [];
-
-      for (let x = 0; x < CHUNK_SIZE; x++) {
-        terrain[y][x] = { type: TerrainType.Wall };
-        vegetation[y][x] = { type: 'none' };
-      }
-    }
+    const generated = this.generator.generateChunk(cx, cy);
+    const terrain: TerrainTile[][] = generated.terrain;
+    const vegetation: VegetationTile[][] = generated.vegetation;
 
     return {
       id: chunkId(cx, cy),
@@ -86,15 +80,13 @@ export class ChunkManager {
 
   /**
    * Ensure that a chunk exist in world and returns it.
-   * In this phase, it doesn't create his own terrain/vegetation
-   * only an empty structure.
    */
   getChunk(cx: number, cy: number): Chunk {
     const id = chunkId(cx, cy);
     let chunk = this.chunks.get(id);
 
     if (!chunk) {
-      chunk = this.createEmptyChunk(cx, cy);
+      chunk = this.createEmptyChunkFromGenerator(cx, cy);
       this.chunks.set(id, chunk);
     }
 
