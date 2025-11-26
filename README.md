@@ -1,12 +1,12 @@
-# simulation_v2
+# Wisp
 
-Mini‑engine de simulação por turnos em TypeScript, baseada em ECS e eventos, com mundo procedural chunkado, IA reativa e storytelling orientado a eventos. Renderizada em ASCII (terminal) e desenhada para extensibilidade: scheduler por turnos, pathfinding/FoV, sistema de ocupação/camadas, StorySystem, triggers/efeitos, seeds determinísticos e serialização para replays.
+Wisp é uma mini‑engine de simulação por turnos em TypeScript, baseada em ECS e eventos, com mundo procedural chunkado, IA reativa e storytelling orientado a eventos. Renderizada em ASCII (terminal), foi desenhada para ser clara, extensível e determinística.
 
-- Renderização em terminal (ASCII), sem bibliotecas de game.
-- Mundo procedural (salas retangulares e corredores em L) e base para chunking/viewport.
-- Entidades com componentes (posição, visão, vida, ataque, aparência, raça, tipo, IA, comportamento).
-- Sistemas determinísticos por domínio: percepção, decisão de IA, combate, movimento, morte e logging.
-- Storytelling básico via log orientado a eventos (base para StorySystem).
+- Renderização em terminal (ASCII), sem dependências de game engine.
+- Mundo procedural com geração por chunks e `viewport` escalável.
+- Arquitetura ECS + EventBus, com sistemas de percepção, IA, movimento, combate, morte e logging.
+- Determinismo por seed (RNG próprio) e pipeline de world‑generation reproduzível.
+- Base para evolução: scheduler por turnos, pathfinding/FoV, sistema de ocupação/camadas, StorySystem, triggers/efeitos, seeds para replays.
 
 
 ## Sumário
@@ -32,9 +32,9 @@ A engine segue o padrão ECS:
 - Systems: funções que iteram sobre componentes relevantes e produzem efeitos (alteram estado e/ou emitem eventos).
 
 Além do ECS, a engine tem:
-- Mundo em grade (`WorldGrid`) com `tiles` e `tick` (contador lógico de tempo de simulação).
+- Mundo em grade (`WorldGrid`) com `tick` e acesso via `ChunkManager` a terreno/vegetação.
 - Barramento de eventos (`EventBus`) por tick para desacoplar sistemas (percepção, IA, movimento, combate, log, morte) e servir de base para StorySystem.
-- Sistema de log com handlers por tipo de evento para mensagens legíveis.
+- Sistema de log com handlers por tipo de evento para mensagens legíveis e auditáveis.
 
 O loop atual é baseado em um relógio real (`setInterval`), mas a engine foi organizada para facilitar a migração para um scheduler por turnos (ver seção “Ideias e Próximos Passos”).
 
@@ -50,21 +50,19 @@ O loop atual é baseado em um relógio real (`setInterval`), mas a engine foi or
 
 
 ## Como Rodar
-Pré‑requisitos: Node.js 18+.
+- Requisitos: Node.js 18+
+- Instalar dependências: `npm install`
+- Executar em desenvolvimento: `npm run dev` (usa `tsx --watch src/main.ts`)
 
-- Instale dependências: `npm install`
-- Rodando em desenvolvimento: `npm run dev`
-  - Usa `tsx --watch src/main.ts` e redesenha o terminal a cada tick.
-
-A execução inicial cria um mundo 25x25 e spawna algumas criaturas humanas e orcs aleatórios. O terminal exibe HUD, painel de foco da entidade e log dos últimos eventos.
+Na execução, o terminal exibe HUD (tick/tamanho/agentes), painel de foco da entidade e log dos últimos eventos. O mundo é gerado on‑demand por chunks e os agentes interagem via sistemas (percepção → IA → combate → movimento → morte/log).
 
 
 ## Estrutura de Pastas
 - `src/main.ts`: ponto de entrada; configura a simulação, agenda ticks e coordena a ordem dos sistemas + render.
 - `src/core/`
   - `simulation.ts`: cria/agrega estado da simulação (mundo, ECS, eventos, log, foco) e funções de spawn.
-  - `world.ts`: geração do mundo, utilitários de tile e avanço de tick.
-  - `tile.ts`: tipos de tile (Empty/Wall) e utilidades (`isWalkable`, `tileToChar`).
+  - `world/`: grid, chunks, viewport, config e geração procedural (terrain/vegetation/biomas).
+  - `tile.ts`: tipos de terreno (`TerrainType`) e utilidades (`isWalkableTerrain`, `terrainToChar`).
   - `math.ts`: helpers de grade (ex.: `inBounds`, `isMovableKind`).
   - `events.ts`: tipos de eventos e barramento (`EventBus`).
   - `log/`: `logState`, `logSystem` e handlers por evento.
@@ -80,17 +78,17 @@ A execução inicial cria um mundo 25x25 e spawna algumas criaturas humanas e or
   - `renderer.ts`: imprime o view model no terminal.
 
 
-## Fluxo do Tick e Ordem dos Sistemas
-Em `src/main.ts`, a cada 1000ms:
-1. `advanceTick(world)`: incrementa o contador lógico do mundo.
-2. `perceptionSystem(sim)`: observadores com `Vision` percebem alvos próximos; emite `entity_seen`.
-3. `aiDecisionSystem(sim)`: processa percepções, decide `AIState` (idle/chase/flee/engaged) e pode emitir `ai_mode_changed` e `entity_engaged`.
-4. `combatSystem(sim)`: para pares em `engaged`, resolve ataque, dano e morte (eventos `entity_attacked`, `entity_damaged`, `entity_died`).
-5. `movementSystem(sim)`: move criaturas não‑engaged (idle: aleatório; chase: aproximação por eixo; flee: aumenta distância). Emite `move`/`blocked_move`.
-6. `logSystem(sim)`: traduz eventos em mensagens legíveis e adiciona ao `LogState`.
-7. `deathSystem(sim)`: processa `entity_died` (converte em `corpse`, remove IA/combate).
-8. `clearEventBus(sim.events)`: limpa eventos do tick.
-9. `render(sim)`: renderiza HUD, painel de foco, mundo e log.
+## Loop de Simulação (ordem dos sistemas)
+Em `src/main.ts`, a cada tick:
+1. `advanceTick(world)`
+2. `perceptionSystem(sim)`
+3. `aiDecisionSystem(sim)`
+4. `combatSystem(sim)`
+5. `movementSystem(sim)`
+6. `logSystem(sim)`
+7. `deathSystem(sim)`
+8. `clearEventBus(sim.events)`
+9. `render(sim)`
 
 Observação: a ordem (IA → combate → movimento) é simples para este protótipo. Projetos maiores podem separar “decidir” de “executar” e usar fases/buffers mais estruturados.
 
@@ -122,15 +120,16 @@ Spawns (em `simulation.ts`):
 
 
 ## Mundo e Tiles
-- `createWorld(width, height)`: inicializa grade com paredes e carva salas retangulares + corredores em L, com largura de 1–2.
-- Tiles: `Empty` e `Wall`; `isWalkable` define passabilidade.
-- Coordenadas e limites: `inBounds` (helpers em `math.ts`).
+- `createWorld(width, height)`: cria metadados do mundo (dimensões/tick).
+- Acesso a terreno/vegetação via `ChunkManager` (geração por chunk sob demanda).
+- Terrenos (`TerrainType`): Grass, Dirt, Sand, Water, ShallowWater, Swamp, Rock, Snow (e `Wall/Empty` legado).
+- Passabilidade: `isWalkableTerrain(terrain)`.
 
 
 ## World Generation
 - Visão geral da pipeline, biomas, painters e chunking: `docs/world-generation/README.md`
 - Diagramas ASCII e exemplos visuais por bioma: `docs/world-generation/diagrams-and-examples.md`
-- Tuning Guide com presets (altura, umidade, temperatura, vegetação, mar): `docs/world-generation/tuning-guide.md`
+- Tuning Guide com presets: `docs/world-generation/tuning-guide.md`
 
 
 ## Eventos e Logging
@@ -154,11 +153,9 @@ Tipos de eventos (em `events.ts`):
 
 
 ## Limitações Conhecidas
-- Sem pathfinding: perseguição usa “eixo dominante” e fuga maximiza distância de forma local.
-- Sem campo de visão (FoV): percepção ignora obstruções por parede.
-- Loop por `setInterval`: todos os agentes “agem” em bloco a cada tick.
-- Balanceamento e dados hardcoded; sem persistência (save/load) e sem testes automatizados.
-- Mundo simples (Empty/Wall) e poucas raças/estados de IA.
+- Sem pathfinding (perseguição local) e sem FoV (paredes/vegetação não bloqueiam visão).
+- Loop baseado em `setInterval` (sem scheduler por velocidade/ação).
+- Logs sem ring buffer; dados de balanceamento hardcoded; sem persistência.
 
 
 ## Ideias e Próximos Passos
@@ -170,5 +167,9 @@ Tipos de eventos (em `events.ts`):
 - Input opcional para controlar uma entidade; HUD com barras e tooltips.
 
 
+## Contribuindo
+- Issues e PRs são bem‑vindos. Estruture contribuições por domínio (core, world, systems, ui, adapters, docs).
+- Commits semânticos ajudam a manter o histórico claro.
+
 ## Licença
-- Conforme `package.json`, licença ISC.
+- ISC (ver `package.json`).
