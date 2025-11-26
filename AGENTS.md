@@ -20,11 +20,18 @@
 - Events: snake_case past-tense (e.g., `entity_died`, `entity_attacked`).
 - Keep modules cohesive by domain (`core/world`, `core/ecs/systems`, `core/log`).
 
+## Spatial Index & Occupancy
+- Movement must call `canEntityWalkTo` and update via `chunkManager.moveEntity` (never change `ecs.positions` without syncing the index).
+- Blocking kinds: only `creature` and `structure`; `corpse` is non‑blocking by design.
+- Spawns must use `chunkManager.addEntity` and a walkability check (see `spawn*` helpers).
+- World is chunked with simulation levels (`full/macro/summary`); keep logic cheap outside `full`.
+
 ## Testing Guidelines
 - No framework configured yet. Prefer lightweight tests first.
 - Suggested layout: `src/**/__tests__/*.spec.ts` or `tests/*.spec.ts`.
 - Recommended tools: built-in `node:test` (zero-deps) or `vitest` if you add a `test` script.
 - Aim for coverage on systems (perception, AI decision, combat, movement) and deterministic world functions.
+  - Include occupancy cases (entity collision, vegetation/terrain blocks, corpse walk‑through).
 
 ## Commit & Pull Request Guidelines
 - Commits: use Conventional Commits where possible.
@@ -37,4 +44,4 @@
 - Node 18+ required. No secrets or external services.
 - Respect deterministic flows: prefer project PRNG utilities over `Math.random` in core logic.
 - Keep imports extension-explicit (`.js`) to match NodeNext resolution and current code.
-
+- Tuning: if changing world size/chunk size or noise scales, see `docs/world-generation/tuning-guide.md` and calibrate walkable ratio.
