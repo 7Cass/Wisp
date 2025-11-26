@@ -4,6 +4,19 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-11-26
+
+### Added
+- Ocupação de tiles e checagem de movimento (`core/world/occupancy.ts`) com razões de bloqueio (mundo, terreno, vegetação, entidade).
+- Índice espacial por tile no `ChunkManager` (maps `tileEntities`/`entityToTile`/`entityToChunk`) e APIs `addEntity/moveEntity/removeEntity/getEntitiesAt`.
+- Movimento em todos os níveis (`full/macro/summary`) agora consulta `canEntityWalkTo`, respeitando colisões e limites do mundo.
+
+### Behavior
+- `corpse` não bloqueia caminho (somente `creature` e `structure` são entidades bloqueadoras).
+
+### Docs
+- Guia de contribuição: `AGENTS.md` com estrutura do projeto, comandos e convenções.
+
 ## [1.1.0] - 2025-11-25
 
 ### Added
