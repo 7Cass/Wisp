@@ -1,12 +1,28 @@
 {
-  "name": "simulation_v2",
+  "name": "wisp",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "tsx --watch src/main.ts"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "simulation",
+    "ecs",
+    "roguelike",
+    "procedural-generation",
+    "typescript",
+    "terminal",
+    "ascii"
+  ],
+  "author": "João Pedro <jaaopbr@gmail.com> (https://github.com/7cass)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7cass/wisp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/7cass/wisp/issues"
+  },
+  "homepage": "https://github.com/7cass/wisp#readme",
   "license": "ISC",
   "description": "Mini‑engine de simulação por turnos em TypeScript, baseada em ECS e eventos, com mundo procedural chunkado, IA reativa e storytelling orientado a eventos; renderização ASCII no terminal.",
   "devDependencies": {
