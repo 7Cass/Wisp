@@ -26,6 +26,8 @@ Wisp é uma mini‑engine de simulação por turnos em TypeScript, baseada em EC
 
 
 ## Visão Geral da Engine
+A arquitetura completa e decisões de design estão detalhadas em `docs/architecture.md`.
+
 A engine segue o padrão ECS:
 - Entities: identificadores numéricos (`number`).
 - Components: dados puros guardados em `Map<Entity, T>` por tipo (ex.: `positions`, `healths`).
@@ -55,6 +57,12 @@ O loop atual é baseado em um relógio real (`setInterval`), mas a engine foi or
 - Executar em desenvolvimento: `npm run dev` (usa `tsx --watch src/main.ts`)
 
 Na execução, o terminal exibe HUD (tick/tamanho/agentes), painel de foco da entidade e log dos últimos eventos. O mundo é gerado on‑demand por chunks e os agentes interagem via sistemas (percepção → IA → combate → movimento → morte/log).
+
+## Sistema de Ocupação & Índice Espacial
+- Ocupação (`src/core/world/occupancy.ts`): consolida terreno/vegetação/entidades e expõe `canEntityWalkTo`.
+- Índice espacial (`src/core/world/chunkManager.ts`): mapas por tile e chunk mantidos por `addEntity/moveEntity/removeEntity`.
+- Regras de bloqueio: apenas `creature` e `structure` bloqueiam; `corpse` NÃO bloqueia.
+- Níveis de simulação por chunk: `full` (completo), `macro` (simplificado com eventos), `summary` (barato sem eventos).
 
 
 ## Estrutura de Pastas
@@ -169,7 +177,11 @@ Tipos de eventos (em `events.ts`):
 
 ## Contribuindo
 - Issues e PRs são bem‑vindos. Estruture contribuições por domínio (core, world, systems, ui, adapters, docs).
+- Leia `AGENTS.md` para comandos, estilo e diretrizes (inclui ocupação/índice espacial).
 - Commits semânticos ajudam a manter o histórico claro.
+
+## Changelog
+- Consulte `docs/changelogs.md` para marcos e mudanças entre versões.
 
 ## Licença
 - ISC (ver `package.json`).
