@@ -4,9 +4,27 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Unreleased]
 
-### Docs
-- README atualizado com descrição expandida (ECS+eventos, chunks/viewport, storytelling via log e roadmap/Visão de Produto).
-- package.json com `description` descritiva do projeto/engine.
+## [1.1.0] - 2025-11-25
+
+### Added
+- Geração de mundo procedural chunkada com pipeline determinístico:
+  - Campos escalares: Altitude (`ValueNoiseHeightMap`), Umidade (`ValueNoiseMoistureMap`), Temperatura (`ValueNoiseTemperatureMap`).
+  - Mapa de Biomas (`RangeBasedBiomeMap`) baseado em intervalos e penalidades.
+  - Pintura de Terreno (`DefaultTerrainPainter`): mares/costas por altitude (seaLevel), neve em picos.
+  - Pintura de Vegetação (`DefaultVegetationPainter`): presença por noise + perfis por bioma.
+  - `ChunkManager`: geração preguiçosa por chunk, acesso `getTerrainAt/getVegetationAt`, visibilidade por `Viewport` e níveis de simulação (`full/macro/summary`).
+- Utilidades de RNG determinístico (`random/prng`, `random/hashing`).
+- Documentação de world‑generation:
+  - `docs/world-generation/README.md` (overview: pipeline, biomas, painters, determinismo e integração).
+  - `docs/world-generation/diagrams-and-examples.md` (diagramas ASCII e exemplos visuais por bioma).
+  - `docs/world-generation/tuning-guide.md` (presets de parâmetros e boas práticas).
+
+### Changed
+- README atualizado com descrição expandida (ECS+eventos, chunks/viewport, storytelling via log, roadmap) e links para a documentação de world‑generation.
+- `package.json` atualizado com `description` descritiva do projeto/engine.
+
+### Notes
+- Base preparada para evoluções: FoV, pathfinding, StorySystem e serviço de ocupação/colisão.
 
 ## [1.0.0] - 2025-11-25
 
@@ -42,3 +60,4 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 - `docs/brainstorming/occupancy-and-collision.md` propondo API de ocupação/camada e evolução com `SpatialIndex` e `Collider`.
 
 [1.0.0]: #
+[1.1.0]: #
