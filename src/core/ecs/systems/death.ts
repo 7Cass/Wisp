@@ -2,7 +2,7 @@ import {Simulation} from '../../simulation';
 import {Entity} from '../entities';
 import {EntityDiedPayload} from '../../events';
 
-export function removeEntity(simulation: Simulation, entity: Entity): void {
+export function markEntityAsDead(simulation: Simulation, entity: Entity): void {
   const { ecs, chunkManager } = simulation;
 
   ecs.kinds.set(entity, { kind: 'corpse' });
@@ -23,6 +23,6 @@ export function deathSystem(simulation: Simulation): void {
 
     const { entity } = event.payload as EntityDiedPayload;
 
-    removeEntity(simulation, entity);
+    markEntityAsDead(simulation, entity);
   }
 }
