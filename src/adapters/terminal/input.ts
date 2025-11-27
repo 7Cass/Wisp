@@ -12,7 +12,7 @@ import {focusNext, focusPrevious} from '../../core/ui/focus';
  */
 export function setupTerminalInput(
   sim: Simulation,
-  clock: SimulationClock
+  clock: SimulationClock,
 ): void {
   const stdin = process.stdin;
 
@@ -66,6 +66,22 @@ export function setupTerminalInput(
             centerViewportOn(vp, pos.x, pos.y, world.width, world.height);
           }
         }
+        break;
+
+      // Stop tick
+      case 'p':
+        clock.isRunning() ? clock.stop() : clock.start();
+        break;
+
+      // Set tick duration 1s, 0.5s and 0.1s
+      case '1':
+        clock.setTickDuration(1000);
+        break;
+      case '2':
+        clock.setTickDuration(500);
+        break;
+      case '3':
+        clock.setTickDuration(100);
         break;
 
       // Ignore other keys silently
