@@ -9,6 +9,7 @@ import {entityEngagedHandler} from './entityEngaged';
 import {entityDiedHandler} from './entityDied';
 import {entityAttackedHandler} from './entityAttacked';
 import {entityDamagedHandler} from './entityDamaged';
+import {storyHandler} from './story';
 
 export type LogHandler = (event: Event, sim: Simulation) => void;
 
@@ -23,4 +24,5 @@ export const logHandlers: LogHandlerMap = {
   entity_attacked: entityAttackedHandler,
   entity_damaged: entityDamagedHandler,
   entity_died: entityDiedHandler,
+  story_event_created: storyHandler,
 };

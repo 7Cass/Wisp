@@ -22,6 +22,8 @@ export class SimulationRunner {
    * Call each system, in order, passing the same Simulation instance.
    */
   tick(): void {
+    this.simulation.events.clear();
+
     for (const system of this.systems) {
       system(this.simulation);
     }

@@ -11,6 +11,8 @@ import {movementSystem} from './core/ecs/systems/movement';
 import {deathSystem} from './core/ecs/systems/death';
 import {ensureFocusedEntity} from './core/ui/focus';
 import {setupTerminalInput} from './adapters/terminal/input';
+import {StoryEngine, storySystem} from './core/story/storySystem';
+import {defaultStoryTriggers} from './core/story/storyRegistry';
 
 function main() {
   const renderer = new TerminalRederer({
@@ -20,7 +22,7 @@ function main() {
   const simulation = createSimulation();
   const logSystem = new LogSystem();
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 1_000; i++) {
     let rnd = Math.random();
 
     if (rnd < 0.2) {
@@ -47,23 +49,19 @@ function main() {
   // After action system
   runner.addSystem(deathSystem);
 
+  // Story system
+  runner.addSystem(storySystem);
+
   // Log systems
   runner.addSystem((sim) => logSystem.process(sim));
 
   // UI Related systems
   runner.addSystem(ensureFocusedEntity);
 
-  /**
-   * App level tick
-   *  - run runner.tick()
-   *  - render current state
-   */
-  function tick(): void {
+  const clock = new SimulationClock(500, () => {
     runner.tick();
     renderer.render(simulation);
-  }
-
-  const clock = new SimulationClock(500, tick);
+  });
 
   setupTerminalInput(simulation, clock);
 
