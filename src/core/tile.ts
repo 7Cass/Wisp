@@ -83,7 +83,7 @@ export function terrainToChar(tile: TerrainTile | null | undefined): string {
     case TerrainType.ShallowWater:
       return '≈'
     case TerrainType.Swamp:
-      return '%';
+      return '"';
     case TerrainType.Rock:
       return '^';
     case TerrainType.Snow:
