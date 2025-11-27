@@ -105,12 +105,10 @@ function interpolatedValueNoise2D(
  * Objective: generate continents with oceans, valleys and smooth mountains.
  */
 export class ValueNoiseHeightMap implements HeightMap {
-  private readonly baseSeed: number;
   private readonly baseNoise: (x: number, y: number) => number;
 
   constructor(private readonly config: HeightMapConfig) {
-    this.baseSeed = hashStringToInt(config.seed);
-    this.baseNoise = makeValueNoise2D(this.baseSeed);
+    this.baseNoise = makeValueNoise2D(config.seed);
 
     if (this.config.scale <= 0) {
       throw new Error('HeightMapConfig.scale must be greater than 0');
