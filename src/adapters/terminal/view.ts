@@ -4,6 +4,7 @@ import {Race} from '../../core/ecs/components';
 import {terrainToChar} from '../../core/tile';
 import {Entity} from '../../core/ecs/entities';
 import {vegetationToChar} from '../../core/world/layers/vegetation';
+import {ChunkManager} from '../../core/world/chunkManager';
 
 export interface WorldView {
   grid: string[][];
@@ -156,9 +157,6 @@ function composeTileChar(sim: Simulation, x: number, y: number): string {
 }
 
 function getEntity(sim: Simulation, x: number, y: number): Entity | null {
-  for (const [entity, position] of sim.ecs.positions) {
-    if (position.x === x && position.y === y) return entity;
-  }
-
-  return null;
+  const entities = sim.chunkManager.getEntitiesAt(sim.ecs, x, y);
+  return entities.length > 0 ? entities[0] : null;
 }
