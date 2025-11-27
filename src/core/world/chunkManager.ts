@@ -6,15 +6,29 @@ import {Entity} from '../ecs/entities';
 import {ECSState} from '../ecs/state';
 import {WorldGenerator} from './generators/worldGenerator';
 import {VegetationTile} from './layers/vegetation';
+import {inBounds} from '../math';
 
 export class ChunkManager {
   private chunks: Map<string, Chunk> = new Map();
   private entityToChunk: Map<Entity, string> = new Map();
 
+  private tileEntities: Map<string, Set<Entity>> = new Map();
+  private entityToTile: Map<Entity, string> = new Map();
+
   constructor(
     private world: WorldGrid,
     private generator: WorldGenerator,
   ) {}
+
+  /**
+   * Tile key helper
+   * @param x
+   * @param y
+   * @private
+   */
+  private makeTileKey(x: number, y: number): string {
+    return `${x},${y}`;
+  }
 
   /**
    * Convert world coordinates to chunk coordinates
@@ -102,7 +116,7 @@ export class ChunkManager {
   }
 
   getTerrainAt(x: number, y: number): TerrainTile | null {
-    if (x < 0 || x >= this.world.width || y < 0 || y >= this.world.height) {
+    if (!inBounds(this.world, x, y)) {
       return null;
     }
     const { cx, cy, localX, localY } = this.worldToLocal(x, y);
@@ -111,7 +125,7 @@ export class ChunkManager {
   }
 
   getVegetationAt(x: number, y: number): VegetationTile | null {
-    if (x < 0 || x >= this.world.width || y < 0 || y >= this.world.height) {
+    if (!inBounds(this.world, x, y)) {
       return null;
     }
     const { cx, cy, localX, localY } = this.worldToLocal(x, y);
@@ -119,8 +133,8 @@ export class ChunkManager {
     return chunk.vegetation[localY][localX];
   }
 
-  setTerrainAt(x: number, y: number, tile: TerrainTile): void {
-    if (x < 0 || x >= this.world.width || y < 0 || y >= this.world.height) {
+  setTerrainAt(x: number, y: number, tile: TerrainTile): null {
+    if (!inBounds(this.world, x, y)) {
       return null;
     }
     const { cx, cy, localX, localY } = this.worldToLocal(x, y);
@@ -128,8 +142,8 @@ export class ChunkManager {
     chunk.terrain[localY][localX] = tile;
   }
 
-  setVegetationAt(x: number, y: number, tile: VegetationTile): void {
-    if (x < 0 || x >= this.world.width || y < 0 || y >= this.world.height) {
+  setVegetationAt(x: number, y: number, tile: VegetationTile): null {
+    if (!inBounds(this.world, x, y)) {
       return null;
     }
     const { cx, cy, localX, localY } = this.worldToLocal(x, y);
@@ -165,10 +179,7 @@ export class ChunkManager {
    * @param y
    */
   addEntity(entity: Entity, x: number, y: number): void {
-    if (
-      x < 0 || x >= this.world.width ||
-      y < 0 || y >= this.world.height
-    ) {
+    if (!inBounds(this.world, x, y)) {
       return;
     }
 
@@ -177,28 +188,61 @@ export class ChunkManager {
 
     chunk.entities.add(entity);
     this.entityToChunk.set(entity, chunk.id);
+
+    // Update spatial index
+    const key = this.makeTileKey(x, y);
+    let set = this.tileEntities.get(key);
+    if (!set) {
+      set = new Set<Entity>();
+      this.tileEntities.set(key, set);
+    }
+    set.add(entity);
+    this.entityToTile.set(entity, key);
   }
 
   /**
    * Move entity between coordinates
    */
   moveEntity(entity: Entity, oldX: number, oldY: number, newX: number, newY: number): void {
-    const oldChunkCoods = this.worldToChunk(oldX, oldY);
+    const oldChunkCoords = this.worldToChunk(oldX, oldY);
     const newChunkCoords = this.worldToChunk(newX, newY);
 
-    if (oldChunkCoods.cx === newChunkCoords.cx && oldChunkCoods.cy === newChunkCoords.cy) {
-      return;
+    if (
+      oldChunkCoords.cx !== newChunkCoords.cx ||
+      oldChunkCoords.cy !== newChunkCoords.cy
+    ) {
+      const oldChunkId = chunkId(oldChunkCoords.cx, oldChunkCoords.cy);
+      const oldChunk = this.chunks.get(oldChunkId);
+      if (oldChunk) {
+        oldChunk.entities.delete(entity);
+      }
+
+      const newChunk = this.getChunk(newChunkCoords.cx, newChunkCoords.cy);
+      newChunk.entities.add(entity);
+      this.entityToChunk.set(entity, newChunk.id);
     }
 
-    const oldChunkId = chunkId(oldChunkCoods.cx, oldChunkCoods.cy);
-    const oldChunk = this.chunks.get(oldChunkId);
-    if (oldChunk) {
-      oldChunk.entities.delete(entity);
-    }
+    // Update spatial index
+    const oldKey = this.makeTileKey(oldX, oldY);
+    const newKey = this.makeTileKey(newX, newY);
 
-    const newChunk = this.getChunk(newChunkCoords.cx, newChunkCoords.cy);
-    newChunk.entities.add(entity);
-    this.entityToChunk.set(entity, newChunk.id);
+    if (oldKey !== newKey) {
+      const oldSet = this.tileEntities.get(oldKey);
+      if (oldSet) {
+        oldSet.delete(entity);
+        if (oldSet.size === 0) {
+          this.tileEntities.delete(oldKey);
+        }
+      }
+
+      let newSet = this.tileEntities.get(newKey);
+      if (!newSet) {
+        newSet = new Set<Entity>();
+        this.tileEntities.set(newKey, newSet);
+      }
+      newSet.add(entity);
+      this.entityToTile.set(entity, newKey);
+    }
   }
 
   /**
@@ -206,14 +250,27 @@ export class ChunkManager {
    */
   removeEntity(entity: Entity): void {
     const chunkIdForEntity = this.entityToChunk.get(entity);
-    if (!chunkIdForEntity) return;
+    if (chunkIdForEntity) {
+      const chunk = this.chunks.get(chunkIdForEntity);
+      if (chunk) {
+        chunk.entities.delete(entity);
+      }
 
-    const chunk = this.chunks.get(chunkIdForEntity);
-    if (chunk) {
-      chunk.entities.delete(entity);
+      this.entityToChunk.delete(entity);
     }
 
-    this.entityToChunk.delete(entity);
+    // Update spatial index
+    const tileKey = this.entityToTile.get(entity);
+    if (tileKey) {
+      const set = this.tileEntities.get(tileKey);
+      if (set) {
+        set.delete(entity);
+        if (set.size === 0) {
+          this.tileEntities.delete(tileKey);
+        }
+      }
+      this.entityToTile.delete(entity);
+    }
   }
 
   /**
@@ -225,17 +282,18 @@ export class ChunkManager {
   getEntitiesAt(ecs: ECSState, x: number, y: number): Entity[] {
     const result: Entity[] = [];
 
-    if (
-      x < 0 || x >= this.world.width ||
-      y < 0 || y >= this.world.height
-    ) {
+    if (!inBounds(this.world, x, y)) {
       return result;
     }
 
-    const { cx, cy } = this.worldToChunk(x, y);
-    const chunk = this.getChunk(cx, cy);
+    const key = this.makeTileKey(x, y);
+    const set = this.tileEntities.get(key);
+    if (!set || set.size === 0) {
+      return result;
+    }
 
-    for (const entity of chunk.entities) {
+    // Extra safety: validate position on ECS
+    for (const entity of set) {
       const position = ecs.positions.get(entity);
       if (position && position.x === x && position.y === y) {
         result.push(entity);
