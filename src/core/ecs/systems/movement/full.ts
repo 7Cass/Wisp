@@ -1,8 +1,8 @@
 import {Simulation} from '../../../simulation';
 import {Entity} from '../../entities';
-import {inBounds, isMovableKind} from '../../../math';
+import {isMovableKind} from '../../../math';
 import {AIState} from '../../components';
-import {isWalkableTerrain} from '../../../tile';
+import {canEntityWalkTo} from '../../../world/occupancy';
 
 export interface Direction {
   dx: number;
@@ -44,20 +44,8 @@ export function movementFull(
 
   // Helper para validar se um tile pode ser pisado
   const canMoveTo = (x: number, y: number): boolean => {
-    if (!inBounds(world, x, y)) return false;
-
-    const tile = chunkManager.getTerrainAt(x, y);
-    if (!tile || !isWalkableTerrain(tile)) return false;
-
-    // Usa o índice espacial do chunk em vez de iterar ecs.positions inteiro
-    const occupants = chunkManager.getEntitiesAt(ecs, x, y);
-
-    for (const otherEntity of occupants) {
-      if (otherEntity === entity) continue;
-      return false;
-    }
-
-    return true;
+    const result = canEntityWalkTo(sim, entity, x, y);
+    return result.ok;
   };
 
   if (!aiState || mode === 'idle' || !targetEntity) {
@@ -151,65 +139,37 @@ export function movementFull(
     }
   }
 
+  // If for some reason didn't choose a movement, do nothing.
+  if (dx === 0 && dy === 0) {
+    return;
+  }
+
   const targetX = position.x + dx;
   const targetY = position.y + dy;
 
   // Out of bounds
-  if (!inBounds(world, targetX, targetY)) {
+  const result = canEntityWalkTo(sim, entity, targetX, targetY);
+  if (!result.ok) {
+    const reason = result.reasons[0] ?? 'terrain';
     events.emit({
       type: 'blocked_move',
       payload: {
         entity,
         from: { x: position.x, y: position.y },
         to: { x: targetX, y: targetY },
-        reason: 'out_of_bounds',
+        reason,
         tick: world.tick,
       },
     });
     return;
   }
 
-  const targetTile = chunkManager.getTerrainAt(targetX, targetY);
-  if (!targetTile || !isWalkableTerrain(targetTile)) {
-    events.emit({
-      type: 'blocked_move',
-      payload: {
-        entity,
-        from: { x: position.x, y: position.y },
-        to: { x: targetX, y: targetY },
-        reason: 'wall',
-        tick: world.tick,
-      },
-    });
-    return;
-  }
-
-  // Checa ocupação usando o índice de chunk
-  const occupants = chunkManager
-    .getEntitiesAt(ecs, targetX, targetY)
-    .filter(otherEntity => otherEntity !== entity);
-
-  if (occupants.length > 0) {
-    events.emit({
-      type: 'blocked_move',
-      payload: {
-        entity,
-        from: { x: position.x, y: position.y },
-        to: { x: targetX, y: targetY },
-        reason: 'occupied',
-        tick: world.tick,
-      },
-    });
-    return;
-  }
-
+  // Successful movement
   const from = { x: position.x, y: position.y };
-
-  // Atualiza posição no ECS
   position.x = targetX;
   position.y = targetY;
 
-  // Atualiza índice espacial de chunks
+
   chunkManager.moveEntity(entity, from.x, from.y, targetX, targetY);
 
   events.emit({
@@ -229,7 +189,7 @@ function randomStep(): { dx: number; dy: number } {
     { dx: -1, dy: 0 },
     { dx: 0, dy: 1 },
     { dx: 0, dy: -1 },
-  ];
+  ] as const;
 
   return options[Math.floor(Math.random() * options.length)];
 }

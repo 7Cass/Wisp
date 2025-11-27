@@ -1,7 +1,7 @@
 import {Simulation} from '../../../simulation';
 import {Entity} from '../../entities';
-import {inBounds, isMovableKind} from '../../../math';
-import {isWalkableTerrain} from '../../../tile';
+import {isMovableKind} from '../../../math';
+import {canEntityWalkTo} from '../../../world/occupancy';
 
 type Position = {
   x: number;
@@ -43,8 +43,11 @@ export function movementMacro(
   const targetX = position.x + dx;
   const targetY = position.y + dy;
 
+  const result = canEntityWalkTo(sim, entity, targetX, targetY);
   // Out of bounds
-  if (!inBounds(world, targetX, targetY)) {
+  if (!result.ok) {
+    const reason = result.reasons[0] ?? 'terrain';
+
     events.emit({
       type: 'blocked_move',
       payload: {
@@ -57,54 +60,11 @@ export function movementMacro(
           x: targetX,
           y: targetY,
         },
-        reason: 'out_of_bounds',
+        reason,
         tick: world.tick
       }
     });
-    return;
-  }
 
-  // Terrain collision
-  const tile = chunkManager.getTerrainAt(targetX, targetY);
-  if (!tile || !isWalkableTerrain(tile)) {
-    events.emit({
-      type: 'blocked_move',
-      payload: {
-        entity,
-        from: {
-          x: position.x,
-          y: position.y
-        },
-        to: {
-          x: targetX,
-          y: targetY
-        },
-        reason: 'wall',
-        tick: world.tick
-      }
-    });
-    return;
-  }
-
-  // Entity collisions
-  const others = chunkManager.getEntitiesAt(ecs, targetX, targetY);
-  if (others.length > 0) {
-    events.emit({
-      type: 'blocked_move',
-      payload: {
-        entity,
-        from: {
-          x: position.x,
-          y: position.y
-        },
-        to: {
-          x: targetX,
-          y: targetY,
-        },
-        reason: 'occupied',
-        tick: world.tick,
-      }
-    });
     return;
   }
 

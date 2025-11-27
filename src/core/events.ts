@@ -1,7 +1,18 @@
 import {Entity} from './ecs/entities';
 import {AIMode} from './ecs/components';
+import {StoryEvent} from './story/storyEvent';
 
 export { EventBus } from './events/eventBus';
+
+/**
+ * Blocking reasons on the point of view of "walk to the tile".
+ * Maps from TileOccupationReason.
+ */
+export type WalkBlockReason =
+  | 'out_of_bounds'
+  | 'terrain'
+  | 'vegetation'
+  | 'entity';
 
 export interface MoveEventPayload {
   entity: Entity;
@@ -14,7 +25,7 @@ export interface BlockedMovePayload {
   entity: Entity;
   from: { x: number; y: number };
   to: { x: number; y: number };
-  reason: 'out_of_bounds' | 'wall' | 'occupied';
+  reason: WalkBlockReason;
   tick: number;
 }
 
@@ -60,6 +71,11 @@ export interface EntityDiedPayload {
   tick: number;
 }
 
+export interface StoryEventCreatedEvent {
+  type: 'story_event_created';
+  payload: StoryEvent;
+}
+
 export type Event =
   | { type: 'move'; payload: MoveEventPayload }
   | { type: 'blocked_move'; payload: BlockedMovePayload }
@@ -68,4 +84,5 @@ export type Event =
   | { type: 'entity_engaged', payload: EntityEngagedPayload }
   | { type: 'entity_attacked', payload: EntityAttackedPayload }
   | { type: 'entity_damaged', payload: EntityDamagedPayload }
-  | { type: 'entity_died', payload: EntityDiedPayload };
+  | { type: 'entity_died', payload: EntityDiedPayload }
+  | StoryEventCreatedEvent ;

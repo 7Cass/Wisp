@@ -1,7 +1,7 @@
 import {Simulation} from '../../../simulation';
 import {Entity} from '../../entities';
-import {inBounds, isMovableKind} from '../../../math';
-import {isWalkableTerrain} from '../../../tile';
+import {isMovableKind} from '../../../math';
+import {canEntityWalkTo} from '../../../world/occupancy';
 
 type Position = {
   x: number;
@@ -44,19 +44,8 @@ export function movementSummary(
   const targetY = position.y + dy;
 
   // Out of bounds
-  if (!inBounds(world, targetX, targetY)) {
-    return;
-  }
-
-  // Basic terrain collision
-  const tile = chunkManager.getTerrainAt(targetX, targetY);
-  if (!tile || !isWalkableTerrain(tile)) {
-    return;
-  }
-
-  // Collision with other entities
-  const others = chunkManager.getEntitiesAt(ecs, targetX, targetY);
-  if (others.length > 0) {
+  const result = canEntityWalkTo(sim, entity, targetX, targetY);
+  if (!result.ok) {
     return;
   }
 

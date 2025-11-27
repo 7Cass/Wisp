@@ -8,9 +8,9 @@ import type { Event } from '../events';
 export class EventBus {
   private _events: Event[] = [];
 
-  constructor(initialEvents?: Event) {
+  constructor(initialEvents?: Event[]) {
     if (initialEvents) {
-      this._events = [...initialEvents];
+      this._events = initialEvents;
     }
   }
 
