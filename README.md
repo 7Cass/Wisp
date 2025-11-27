@@ -23,6 +23,7 @@ Wisp é uma mini‑engine de simulação por turnos em TypeScript, baseada em EC
 - Foco de Entidade (UI)
 - Limitações Conhecidas
 - Ideias e Próximos Passos
+ - Story System (V1)
 
 
 ## Visão Geral da Engine
@@ -173,6 +174,13 @@ Tipos de eventos (em `events.ts`):
 - Serialização do estado (save/load) e testes unitários dos sistemas.
 - Mais componentes (velocidade, armadura, efeitos temporais) e mais eventos.
 - Input opcional para controlar uma entidade; HUD com barras e tooltips.
+
+## Story System (V1)
+- Visão: camada narrativa baseada em eventos do tick, com triggers determinísticos.
+- Arquivos principais: `src/core/story/*` (StoryEngine, StoryState, triggers) e handler de log `src/core/log/handlers/story.ts`.
+- Evento canônico de estreia: `auron_drift` (manifestação sutil de Auron); gera `story_event_created` e uma linha de log temática.
+- Ordem no loop: após ação (`movement/combat/death`) e antes do `LogSystem` para logar no mesmo tick.
+- Referências: `docs/architecture.md` (fluxo) e `docs/world/auron.md` (lore + hooks técnicos).
 
 
 ## Contribuindo

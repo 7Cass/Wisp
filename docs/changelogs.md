@@ -4,6 +4,23 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-11-26
+
+### Added
+- StorySystem V1: motor narrativo baseado em `StoryEngine` + `StoryTrigger`s.
+  - Estado: `StoryState` com `auron` (intensidade, último drift) e `nextEventId`.
+  - Evento canônico: `auron_drift` (presença sutil de Auron).
+  - Integração com EventBus: `story_event_created` + `log` via handler dedicado.
+- Auron (canon): primeiro trigger (`AuronDriftTrigger`) com mensagens determinísticas.
+
+### Changed
+- Loop registra `storySystem` após sistemas de ação e antes do `LogSystem`.
+- README atualizado com seção do StorySystem e link para arquitetura/Auron.
+
+### Notes
+- Determinismo: o StorySystem usa RNG determinístico da simulação.
+- Terreno para evolução: storylets adicionais, Rumors panel (UI), decay de presença.
+
 ## [1.2.0] - 2025-11-26
 
 ### Added
