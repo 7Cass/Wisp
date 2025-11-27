@@ -80,7 +80,7 @@ function interpolatedValueNoise2D(
  *  - densityThreshold: base probability of a tile to have vegetation > 0
  */
 export interface VegetationPainterConfig {
-  seed: string;
+  seed: number;
   noiseScale: number;
   densityThreshold: number;
 }

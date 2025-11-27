@@ -21,7 +21,7 @@ export interface TemperatureMap {
  *  - noiseStrength: how much the noise diverse fom the climate tendency
  */
 export interface TemperatureMapConfig {
-  seed: string;
+  seed: number;
 
   /**
    * Total world height in tiles.

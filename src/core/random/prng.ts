@@ -13,3 +13,27 @@ export function mulberry32(seed: number): () => number {
     return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+export interface Rng {
+  float(): number;
+  int(min: number, max: number): number;
+}
+
+/**
+ * Create a deterministic RNG based in mulberry32.
+ */
+export function createRng(seed: number): Rng {
+  const prng = mulberry32(seed);
+
+  return {
+    float(): number {
+      return prng();
+    },
+    int(min: number, max: number): number {
+      const r = prng();
+      const lo = Math.ceil(min);
+      const hi = Math.floor(max);
+      return Math.floor(r * (hi - lo + 1)) + lo;
+    }
+  }
+}

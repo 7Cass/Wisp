@@ -18,7 +18,7 @@ export interface HeightMap {
  * It can be modified to tune the world "feeling".
  */
 export interface HeightMapConfig {
-  seed: string;
+  seed: number;
 
   /**
    * Global noise scale.

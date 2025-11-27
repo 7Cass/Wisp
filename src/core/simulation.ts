@@ -17,6 +17,9 @@ import {ValueNoiseTemperatureMap} from './world/generators/temperatureMap';
 import {DefaultTerrainPainter} from './world/generators/terrainPainter';
 import {DefaultVegetationPainter} from './world/generators/vegetationPainter';
 import {RangeBasedBiomeMap} from './world/biome/biomeMap';
+import {canEntityWalkTo} from './world/occupancy';
+import {createInitialStoryState, StoryState} from './story/storyState';
+import {createRng, Rng} from './random/prng';
 
 export interface Simulation {
   world: WorldGrid,
@@ -24,19 +27,21 @@ export interface Simulation {
   ecs: ECSState,
   events: EventBus;
   log: LogState;
+  story: StoryState;
 
+  rng: Rng;
   chunkManager: ChunkManager;
 
   focusedEntity: Entity | null;
 }
 
 export function createSimulation(): Simulation {
+  const seed = 123;
+  const rng = createRng(seed);
   const world = createWorld(
     DEFAULT_WORLD_CONFIG.worldWidth,
     DEFAULT_WORLD_CONFIG.worldHeight
   );
-
-  const seed = 'default';
 
   const generatorConfig: WorldGeneratorConfig = {
     seed,
@@ -47,32 +52,32 @@ export function createSimulation(): Simulation {
   // HeightMap
   const heightmap = new ValueNoiseHeightMap({
     seed,
-    scale: 400,
-    octaves: 4,
-    persistence: 0.55,
-    lacunarity: 2.1,
+    scale: 800,
+    octaves: 3,
+    persistence: 0.5,
+    lacunarity: 2.0,
   });
 
   // MoistureMap
   const moistureMap = new ValueNoiseMoistureMap({
     seed,
-    scale: 450,
+    scale: 500,
     octaves: 3,
     persistence: 0.5,
-    lacunarity: 2.0,
+    lacunarity: 2.1,
   });
 
   // TemperatureMap
   const temperatureMap = new ValueNoiseTemperatureMap({
     seed,
     worldHeight: world.height,
-    scale: 500,
+    scale: 600,
     octaves: 4,
     persistence: 0.55,
     lacunarity: 2.2,
     latitudeWeight: 0.7,
     altitudeWeight: 0.3,
-    noiseStrength: 0.25,
+    noiseStrength: 0.22,
   });
 
   // Biome Map
@@ -82,8 +87,8 @@ export function createSimulation(): Simulation {
   const terrainPainter = new DefaultTerrainPainter();
   const vegetationPainter = new DefaultVegetationPainter({
     seed,
-    noiseScale: 0.3,
-    densityThreshold: 0.23
+    noiseScale: 0.35,
+    densityThreshold: 0.25
   });
 
   // Final Generator
@@ -109,7 +114,9 @@ export function createSimulation(): Simulation {
     ecs: createEmptyECSState(),
     events: new EventBus(),
     log: createLogState(),
+    story: createInitialStoryState(),
 
+    rng,
     chunkManager,
 
     focusedEntity: null,
@@ -117,21 +124,14 @@ export function createSimulation(): Simulation {
 }
 
 function canSpawnAt(simulation: Simulation, x: number, y: number): boolean {
-  if (!inBounds(simulation.world, x, y)) {
-    return false;
-  }
-
-  if (!isWalkableTerrain(simulation.chunkManager.getTerrainAt(x, y))) {
-    return false;
-  }
-
-  for (const position of simulation.ecs.positions.values()) {
-    if (position.x === x && position.y === y) {
-      return false;
-    }
-  }
-
-  return true;
+  const result = canEntityWalkTo(
+    simulation,
+    null,
+    x,
+    y
+  );
+  
+  return result.ok;
 }
 
 function spawnCreature(simulation: Simulation, x: number, y: number, race: RaceId, glyph: string): Entity {
@@ -161,7 +161,7 @@ export function spawnRandomCreature(simulation: Simulation, race?: RaceId): Enti
     return availableRaces[idx];
   }
 
-  const maxAttempts = 500;
+  const maxAttempts = 10;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const x = randomInt(0, width);

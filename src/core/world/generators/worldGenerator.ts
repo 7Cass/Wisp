@@ -9,7 +9,7 @@ import {ValueNoiseMoistureMap} from './moistureMap';
 import {ValueNoiseTemperatureMap} from './temperatureMap';
 
 export interface WorldGeneratorConfig {
-  seed: string;
+  seed: number;
   worldWidth: number;
   worldHeight: number;
 }

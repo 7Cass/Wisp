@@ -16,7 +16,7 @@ export interface MoistureMap {
  * Moisture generator configuration.
  */
 export interface MoistureMapConfig {
-  seed: string;
+  seed: number;
 
   /**
    * Global noise scale.
